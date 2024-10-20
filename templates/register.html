@@ -129,6 +129,7 @@
 
                     <div id="register-status" style="display: none;"></div>
                     <div id="message"></div>
+                    <div id="snackbar"></div>
                 </div>
             </div>
         </div>
@@ -223,6 +224,7 @@
                         mediaRecorder.stop();
                         statusText.querySelector('.recording-text').textContent = "Recording stopped";
                         registerButton.querySelector(".mic-icon").classList.remove("recording");
+                        // location.reload();
                     }, 5000);
                 })
                 .catch(error => {
@@ -238,30 +240,58 @@
         }
 
         function registerVoice(blob) {
-            const name = document.getElementById('name').value;
-            const formData = new FormData();
-            formData.append('name', name);
-            formData.append('audio', blob, 'train.wav');
+    const name = document.getElementById('name').value;
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('audio', blob, 'train.wav');
 
-            statusDiv.textContent = "Processing registration...";
+    statusDiv.textContent = "Processing registration...";
 
-            fetch('/register', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    statusText.innerHTML = data.msg;
-                    statusDiv.textContent = "";
-                    if (passwordHint) {
-                passwordHint.style.display = 'none';
+    fetch('/register', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            // Set snackbar message in localStorage only if it doesn't already exist
+            if (!localStorage.getItem('snackbarMessage')) {
+                localStorage.setItem('snackbarMessage', data.msg);
             }
-                })
-                .catch(error => {
-                    messageDiv.textContent = "Error: " + error.message;
-                    statusDiv.textContent = "";
-                });
+
+            // Reload the page after successful registration
+            location.reload();
+        })
+        .catch(error => {
+            messageDiv.textContent = "Error: " + error.message;
+            statusDiv.textContent = "";
+        });
+}
+
+        window.onload = function() {
+            // Show the snackbar message
+            showSnackbar();
+        };
+
+        function showSnackbar() {
+            const snackbar = document.getElementById("snackbar");
+
+            // Check if there's a message stored in localStorage
+            const storedMessage = localStorage.getItem('snackbarMessage');
+            if (storedMessage) {
+                snackbar.textContent = storedMessage;
+                snackbar.className = "show"; // Display the snackbar
+
+                // Remove the message from localStorage after displaying
+                localStorage.removeItem('snackbarMessage');
+
+                // Hide the snackbar after 3 seconds
+                setTimeout(function () {
+                    snackbar.className = snackbar.className.replace("show", "");
+                }, 3000); // 3 seconds display time
+            }
         }
+
+
 
         function exportWAV(audioData, sampleRate) {
             const mergedBuffers = mergeBuffers(audioData, sampleRate * 5);
