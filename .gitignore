@@ -1,0 +1,23 @@
+# Virtual environment
+myenv/
+
+# Byte-compiled / generated Python files
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# macOS system files
+.DS_Store
+
+# Log files
+*.log
+
+# Python egg files
+*.egg
+*.egg-info/
+
+# Cache and temp files
+*.swp
+*.swo

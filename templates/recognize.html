@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Voice Recognition</title>
+      <link rel="icon" href="static/images/microphone.png" type="image/x-icon" /> 
+      <meta name="description" content="Voice recognition web app">
+      <link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
+      <link rel="stylesheet" type="text/css" href="static/css/style.css">
+      <link rel="stylesheet" href="static/css/responsive.css">
+
+      <style>
+         .mic-icon {
+            transition: transform 0.2s ease-in-out;
+         }
+
+         .mic-icon.recording {
+            animation: micPulse 1s infinite;
+         }
+
+         @keyframes micPulse {
+            0% {
+               transform: scale(1);
+            }
+            50% {
+               transform: scale(1.2);
+            }
+            100% {
+               transform: scale(1);
+            }
+         }
+
+         .recording-text {
+            color: red;
+            font-weight: bold;
+            display: inline;
+         }
+
+         .dot-animation {
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: red;
+            display: inline;
+         }
+
+         .dot-animation span {
+            animation: blink 1.5s infinite;
+            opacity: 0;
+         }
+
+         .dot-animation span:nth-child(1) {
+            animation-delay: 0.2s;
+         }
+
+         .dot-animation span:nth-child(2) {
+            animation-delay: 0.4s;
+         }
+
+         .dot-animation span:nth-child(3) {
+            animation-delay: 0.6s;
+         }
+
+         @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+         }
+
+         #recognize-status, #message {
+            margin-top: 20px;
+            font-size: 18px;
+            text-align: center;
+         }
+
+         #message {
+            color: green;
+         }
+      </style>
+   </head>
+   <body>
+      <div class="header_section">
+         <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="logo" href="/"><img src="static/images/logo.svg"></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+               <span class="navbar-toggler-icon"></span>
+            </button>
+         </nav>
+      </div>
+
+      <div class="cooming_section layout_padding">
+         <div class="container">
+            <div class="row">
+               <div class="col-md-6">
+                  <div class="image_17">
+                     <img src="static/images/img-17.png">
+                  </div>
+               </div>
+               <div class="col-md-6">
+                  <div class="play_icon">
+                    <button id="recognize-record-btn" data-toggle="tooltip" data-placement="top" title="Click here to start voice recording">
+                        <img src="static/images/microphone.png" class="mic-icon" alt="Mic Icon">
+                     </button>
+                  </div>
+                  <h1 id="statusText" class="Cooming_soon_taital">
+                     <span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>
+                  </h1>
+                  <p class="long_text_1">"My voice is my password"</p>
+
+                  <div id="recognize-status" style="display: none;"></div>
+                  <div id="message"></div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioContext;
+        let audioStream;
+
+        const recognizeButton = document.getElementById('recognize-record-btn');
+const recognizeStatusDiv = document.getElementById('recognize-status');
+const messageDiv = document.getElementById('message');
+const statusText = document.getElementById('statusText');
+const passwordHint = document.querySelector('.long_text_1');
+
+// Function to reset UI
+function resetUI() {
+    // Reset the status text to its initial "Recognize..." state
+    statusText.innerHTML = '<span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>';
+
+    // Show the "My voice is my password" text
+    if (passwordHint) {
+        passwordHint.style.display = 'block';
+    }
+
+    // Clear any recognition status or error message
+    recognizeStatusDiv.textContent = '';
+    messageDiv.textContent = '';
+}
+
+// Function to start recording
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            audioStream = stream;
+            audioContext = new AudioContext({ sampleRate: 16000 });
+            const source = audioContext.createMediaStreamSource(stream);
+            const recorder = audioContext.createScriptProcessor(4096, 1, 1);
+
+            source.connect(recorder);
+            recorder.connect(audioContext.destination);
+
+            recorder.onaudioprocess = function(event) {
+                const inputData = event.inputBuffer.getChannelData(0);
+                audioChunks.push(new Float32Array(inputData));
+            };
+
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.onstop = () => {
+                const blob = exportWAV(audioChunks, 16000);
+                audioChunks = [];
+                recognizeVoice(blob);
+                stopMicrophoneAccess();
+            };
+
+            mediaRecorder.start();
+            statusText.querySelector('.recording-text').textContent = "Recording";  // Show "Recording" during the process
+            recognizeButton.querySelector(".mic-icon").classList.add("recording");
+            setTimeout(() => {
+                mediaRecorder.stop();
+                statusText.querySelector('.recording-text').textContent = "Processing"; // Update status
+                recognizeButton.querySelector(".mic-icon").classList.remove("recording");
+            }, 5000); // 5000 milliseconds = 5 seconds
+        })
+        .catch(error => {
+            console.error("Error accessing the microphone: ", error);
+        });
+}
+
+
+recognizeButton.addEventListener('click', () => {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        resetUI(); // Reset UI before starting a new recording
+        startRecording();
+    } else if (mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+    }
+});
+
+function recognizeVoice(blob) {
+    const formData = new FormData();
+    formData.append('audio', blob, 'test.wav');
+
+    recognizeStatusDiv.textContent = "Processing recognition...";
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    blob.arrayBuffer()
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+
+            console.log("WAV file duration: ", audioBuffer.duration, "seconds");
+            return fetch('/recognize', {
+                method: 'POST',
+                body: formData
+            });
+        })
+        .then(response => response.json())
+      .then(data => {
+
+    if (data.msg === "Hey New User, Welcome to Stella Voice Assistant !!") {
+      statusText.innerHTML = `${data.msg} <br><a href="/register" id="register-link" class="register-link">Click here to register</a>`;
+
+    } else {
+        statusText.innerHTML = data.msg;
+    }
+
+    // Hide the "My voice is my password" paragraph
+    if (passwordHint) {
+        passwordHint.style.display = 'none';
+    }
+
+    recognizeButton.querySelector(".mic-icon").classList.remove("recording");
+
+    recognizeStatusDiv.textContent = "";  // Clear processing message
+})
+        .catch(error => {
+            messageDiv.textContent = "Error: " + error.message;
+            recognizeStatusDiv.textContent = "";
+            statusText.querySelector('.recording-text').textContent = "Recognize";
+        });
+}
+
+
+
+
+        function exportWAV(audioData, sampleRate) {
+            const mergedBuffers = mergeBuffers(audioData, sampleRate * 5);
+            const downsampledBuffer = downsampleBuffer(mergedBuffers, sampleRate);
+            const wavBuffer = encodeWAV(downsampledBuffer, sampleRate);
+            return new Blob([wavBuffer], { type: 'audio/wav' });
+        }
+
+        function mergeBuffers(audioData, length) {
+            const result = new Float32Array(length);
+            let offset = 0;
+            for (let i = 0; i < audioData.length; i++) {
+                result.set(audioData[i], offset);
+                offset += audioData[i].length;
+            }
+            return result;
+        }
+
+        function downsampleBuffer(buffer, sampleRate) {
+            if (sampleRate === 16000) return buffer;
+            const ratio = audioContext.sampleRate / sampleRate;
+            const newLength = Math.round(buffer.length / ratio);
+            const result = new Float32Array(newLength);
+            for (let i = 0; i < newLength; i++) {
+                result[i] = buffer[Math.round(i * ratio)];
+            }
+            return result;
+        }
+
+        function encodeWAV(samples, sampleRate) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + samples.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, samples.length * 2, true);
+
+            let offset = 44;
+            for (let i = 0; i < samples.length; i++, offset += 2) {
+                const sample = Math.max(-1, Math.min(1, samples[i]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            }
+
+            return view;
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+      </script>
+   </body>
+</html>
+
+
