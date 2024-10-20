@@ -282,23 +282,6 @@ button {
     font-size: 16px;
     margin-left: 0px;
 }
-/* 
-.see_bt {
-    width: 170px;
-    float: left;
-    padding-top: 30px;
-}
-
-.see_bt a {
-    width: 100%;
-    float: left;
-    font-size: 18px;
-    color: #ffffff;
-    background-color: #df9911;
-    text-align: center;
-    padding: 7px 0px;
-    border-radius: 40px;
-} */
 
 .see_bt {
     width: auto; /* Adjust width automatically based on content */
@@ -779,15 +762,6 @@ input.email_text::placeholder {
     text-transform: uppercase;
 }
 
-/* .Cooming_soon_taital:after {
-    content: '';
-    position: absolute;
-    border: 2px solid #464646;
-    left: initial;
-    right: -20px;
-    width: 150px;
-    top: 50px;
-} */
 
 .long_text_1 {
     width: 100%;
@@ -885,18 +859,6 @@ input.email_text::placeholder {
 .copyright_text a:hover {
     color: #d89616;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 .tooltip-inner {
     background-color: #333333;  /* Change background color */
@@ -999,9 +961,17 @@ input[type="text"]:focus {
 
 
 #register-link {
-    font-size: 20px;
+    font-size: 15px;
     text-decoration: underline;
-    color: blue; /* Optional: change the link color */
+    color: #1877F2; /* Optional: change the link color */
+    cursor: pointer;
+    font-style: arial;
+    font-family:Helvetica Neue,Helvetica,Arial,sans-serif;
+}
+
+#register-link:hover {
+    color: #0056b3; /* Change to a darker blue on hover */
+    text-decoration: none; /* Remove underline on hover */
 }
 
 
@@ -1049,3 +1019,158 @@ input[type="text"]:focus {
     from {bottom: 30px; opacity: 1;}
     to {bottom: 0; opacity: 0;}
 }
+
+
+
+
+
+
+
+.mic-icon {
+    transition: transform 0.2s ease-in-out;
+ }
+
+ .mic-icon.recording {
+    animation: micPulse 1s infinite;
+ }
+
+ @keyframes micPulse {
+    0% {
+       transform: scale(1);
+    }
+    50% {
+       transform: scale(1.2);
+    }
+    100% {
+       transform: scale(1);
+    }
+ }
+
+ .recording-text {
+    color: red;
+    font-weight: bold;
+    display: inline;
+ }
+
+ .dot-animation {
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: red;
+    display: inline;
+ }
+
+ .dot-animation span {
+    animation: blink 1.5s infinite;
+    opacity: 0;
+ }
+
+ .dot-animation span:nth-child(1) {
+    animation-delay: 0.2s;
+ }
+
+ .dot-animation span:nth-child(2) {
+    animation-delay: 0.4s;
+ }
+
+ .dot-animation span:nth-child(3) {
+    animation-delay: 0.6s;
+ }
+
+ @keyframes blink {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+ }
+
+ #recognize-status, #message {
+    margin-top: 20px;
+    font-size: 18px;
+    text-align: center;
+ }
+
+ #message {
+    color: green;
+ }
+
+
+   /* Adjust modal height and width */
+   .custom-modal {
+    background-color: #f0f0f0; /* Change background color */
+    width: 500px; /* Set modal width */
+    height: 300px; /* Set modal height */
+ }
+
+ /* Modal header styling */
+ .custom-modal-header {
+    background-color: #243882; /* Change header background color */
+    color: white; /* Change header text color */
+ }
+
+ /* Ensure the modal title is white */
+ .custom-modal-header .modal-title {
+    color: white; /* Change modal title text color to white */
+ }
+
+ /* Optional: Style the close button */
+ .custom-modal-header .close span {
+    color: white; /* Change the close button color to white */
+ }
+
+
+
+ /* Modal body styling */
+ .custom-modal-body {
+    padding: 20px; /* Add padding for better spacing */
+    color: #243882; /* Text color */
+    font-size: 16px; /* Text size */
+    max-height: 300px; /* Adjust this value as per your requirement */
+    overflow-y: auto; 
+ }
+
+
+
+
+ /* Modal footer styling */
+ .custom-modal-footer {
+    background-color: #f1f1f1; /* Change footer background color */
+    padding: 10px; /* Add padding */
+ }
+
+ /* Adjust the size of the close button */
+ .close {
+    font-size: 1.5rem; /* Increase the size of the close button */
+    color: white; /* Change close button color */
+ }
+
+ /* Center the modal vertically and horizontally */
+ .modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Full screen height */
+ }
+
+ /* Optional: Increase modal width for larger screens */
+ @media (min-width: 768px) {
+    .custom-modal {
+       width: 600px; /* Wider modal on larger screens */
+    }
+ }
+
+
+ .custom-close-btn {
+    background-color: #243882;  /* Green background */
+    color: white; /* White text */
+    padding: 10px 20px; /* Padding for a larger clickable area */
+    border: none; /* Remove default border */
+    border-radius: 50px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    font-size: 16px; /* Increase font size */
+    transition: background-color 0.3s ease; /* Smooth transition */
+ }
+
+ /* Change background color on hover */
+ .custom-close-btn:hover {
+    background-color: #536dca; /* Darker green on hover */
+ }
+

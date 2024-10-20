@@ -4,7 +4,7 @@
       <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Voice Recognition</title>
+      <title>Voice Transcription</title>
       <link rel="icon" href="static/images/microphone.png" type="image/x-icon" /> 
       <meta name="description" content="Voice recognition web app">
       <link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
@@ -29,7 +29,7 @@
             <div class="row">
                <div class="col-md-6">
                   <div class="image_17">
-                     <img src="static/images/img-17.png">
+                     <img src="static/images/img-18.png">
                   </div>
                </div>
                <div class="col-md-6">
@@ -39,7 +39,7 @@
                      </button>
                   </div>
                   <h1 id="statusText" class="Cooming_soon_taital">
-                     <span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>
+                     <span class="recording-text">Speech-to-Text</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>
                   </h1>
                   <p class="long_text_1">"My voice is my password"</p>
 
@@ -59,7 +59,6 @@
                   </button>
                </div>
                <div class="modal-body custom-modal-body" id="modalMessage">
-               <div id="transcriptionText" style="margin-top: 10px;"></div>
                </div>
                <div class="modal-footer custom-modal-footer">
                   <button type="button" class="see_bt custom-close-btn" data-dismiss="modal" onclick="window.location.reload();">Close</button>
@@ -75,119 +74,119 @@
         let audioChunks = [];
         let audioContext;
         let audioStream;
+        let isRecording = false;
 
-         const recognizeButton = document.getElementById('recognize-record-btn');
-         const recognizeStatusDiv = document.getElementById('recognize-status');
-         const messageDiv = document.getElementById('message');
-         const statusText = document.getElementById('statusText');
-         const passwordHint = document.querySelector('.long_text_1');
+        const recognizeButton = document.getElementById('recognize-record-btn');
+        const recognizeStatusDiv = document.getElementById('recognize-status');
+        const messageDiv = document.getElementById('message');
+        const statusText = document.getElementById('statusText');
+        const passwordHint = document.querySelector('.long_text_1');
 
-         // Function to reset UI
-         function resetUI() {
-            // Reset the status text to its initial "Recognize..." state
-            statusText.innerHTML = '<span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>';
-            // Show the "My voice is my password" text
+        // Function to reset UI
+        function resetUI() {
+            statusText.innerHTML = '<span class="recording-text">Recording</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>';
             if (passwordHint) {
-               passwordHint.style.display = 'block';
+                passwordHint.style.display = 'block';
             }
-            // Clear any recognition status or error message
             recognizeStatusDiv.textContent = '';
             messageDiv.textContent = '';
-         }
-         // Function to start recording
-         function startRecording() {
+        }
+
+        // Function to start recording
+        function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
-               .then(stream => {
-                     audioStream = stream;
-                     audioContext = new AudioContext({ sampleRate: 16000 });
-                     const source = audioContext.createMediaStreamSource(stream);
-                     const recorder = audioContext.createScriptProcessor(4096, 1, 1);
+                .then(stream => {
+                    audioStream = stream;
+                    audioContext = new AudioContext({ sampleRate: 16000 });
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const recorder = audioContext.createScriptProcessor(4096, 1, 1);
 
-                     source.connect(recorder);
-                     recorder.connect(audioContext.destination);
+                    source.connect(recorder);
+                    recorder.connect(audioContext.destination);
 
-                     recorder.onaudioprocess = function(event) {
+                    recorder.onaudioprocess = function(event) {
                         const inputData = event.inputBuffer.getChannelData(0);
                         audioChunks.push(new Float32Array(inputData));
-                     };
+                    };
 
-                     mediaRecorder = new MediaRecorder(stream);
-                     mediaRecorder.onstop = () => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.onstop = () => {
                         const blob = exportWAV(audioChunks, 16000);
                         audioChunks = [];
                         recognizeVoice(blob);
                         stopMicrophoneAccess();
-                     };
+                    };
 
-                     mediaRecorder.start();
-                     statusText.querySelector('.recording-text').textContent = "Recording";  // Show "Recording" during the process
-                     recognizeButton.querySelector(".mic-icon").classList.add("recording");
-                     setTimeout(() => {
-                        mediaRecorder.stop();
-                        statusText.querySelector('.recording-text').textContent = "Processing"; // Update status
-                        recognizeButton.querySelector(".mic-icon").classList.remove("recording");
-                     }, 5000); // 5000 milliseconds = 5 seconds
-               })
-               .catch(error => {
-                     console.error("Error accessing the microphone: ", error);
-               });
-         }
-     
-         recognizeButton.addEventListener('click', () => {
-            if (!mediaRecorder || mediaRecorder.state === "inactive") {
-               resetUI(); // Reset UI before starting a new recording
-               startRecording();
-            } else if (mediaRecorder.state === "recording") {
-               mediaRecorder.stop();
+                    mediaRecorder.start();
+                    statusText.querySelector('.recording-text').textContent = "Recording";
+                    recognizeButton.querySelector(".mic-icon").classList.add("recording");
+                })
+                .catch(error => {
+                    console.error("Error accessing the microphone: ", error);
+                });
+        }
+
+        // Recognize button event listener
+        recognizeButton.addEventListener('click', () => {
+            if (!isRecording) {
+                // Start recording
+                resetUI();
+                startRecording();
+                isRecording = true; // Set to true to prevent re-triggering until stopped
+            } else {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    statusText.querySelector('.recording-text').textContent = "Processing"; // Change text to "Processing"
+                    mediaRecorder.stop();
+                    isRecording = false; // Allow recording to be triggered again after stopping
+                    recognizeButton.querySelector(".mic-icon").classList.remove("recording");
+                }
             }
-         });
+        });
 
-         function recognizeVoice(blob) {
-         const formData = new FormData();
-         formData.append('audio', blob, 'test.wav');
-
-         recognizeStatusDiv.textContent = "Processing recognition...";
-         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-         blob.arrayBuffer()
-            .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-            .then(audioBuffer => {
-                  console.log("WAV file duration: ", audioBuffer.duration, "seconds");
-                  return fetch('/recognize', {
-                     method: 'POST',
-                     body: formData
-                  });
-            })
-            .then(response => response.json())
-            .then(data => {
-                  let message = data.msg;
-                  let transcription=data.transcription;
-                  console.log("Transcription: ", transcription);  
-                  if (message === "Hey New User, Welcome to Stella Voice Assistant !!") {
-                     message += `<br><a href="/register" id="register-link" class="register-link">Click here to register</a>`;
-                  }
-                  document.getElementById('modalMessage').innerHTML = message;
-                  if (passwordHint) {
-                     passwordHint.style.display = 'none';
-                  }
-
-                  recognizeButton.querySelector(".mic-icon").classList.remove("recording");
-                  recognizeStatusDiv.textContent = "";  // Clear processing message
-                  $('#recognitionModal').modal('show');
-                  statusText.querySelector('.recording-text').textContent = "Recognize"; 
-            })
-            .catch(error => {
-                  messageDiv.textContent = "Error: " + error.message;
-                  recognizeStatusDiv.textContent = "";
-                  statusText.querySelector('.recording-text').textContent = "Recognize";
-            });
-         }
-
-         function exportWAV(audioData, sampleRate) {
-            const mergedBuffers = mergeBuffers(audioData, sampleRate * 5);
+        // Function to export audio to WAV format
+        function exportWAV(audioData, sampleRate) {
+            const totalSamples = audioData.reduce((acc, curr) => acc + curr.length, 0);
+            const mergedBuffers = mergeBuffers(audioData, totalSamples);
             const downsampledBuffer = downsampleBuffer(mergedBuffers, sampleRate);
             const wavBuffer = encodeWAV(downsampledBuffer, sampleRate);
             return new Blob([wavBuffer], { type: 'audio/wav' });
+        }
+
+        // Function to handle voice recognition and result display
+        function recognizeVoice(blob) {
+            const formData = new FormData();
+            formData.append('audio', blob, 'test.wav');
+
+            recognizeStatusDiv.textContent = "Processing recognition...";
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            blob.arrayBuffer()
+                .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+                .then(audioBuffer => {
+                    console.log("WAV file duration: ", audioBuffer.duration, "seconds");
+                    return fetch('/transcription', {
+                        method: 'POST',
+                        body: formData
+                    });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    let message = data.transcription;
+
+                    document.getElementById('modalMessage').innerHTML = message;
+                    if (passwordHint) {
+                        passwordHint.style.display = 'none';
+                    }
+                    recognizeButton.querySelector(".mic-icon").classList.remove("transcribing");
+                    recognizeStatusDiv.textContent = "";
+                    $('#recognitionModal').modal('show');
+                    statusText.querySelector('.recording-text').textContent = "transcribing";
+                })
+                .catch(error => {
+                    messageDiv.textContent = "Error: " + error.message;
+                    recognizeStatusDiv.textContent = "";
+                    statusText.querySelector('.recording-text').textContent = "Speech-to-Text";
+                });
         }
 
          function mergeBuffers(audioData, length) {

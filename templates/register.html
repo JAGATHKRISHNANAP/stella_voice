@@ -6,93 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Voice Registration</title>
-
     <link rel="icon" href="static/images/microphone.png" type="image/x-icon" /> 
     <meta name="description" content="Voice recognition web app">
     <link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="static/css/style.css">
     <link rel="stylesheet" href="static/css/responsive.css">
-
-    <style>
-        .mic-icon {
-            transition: transform 0.2s ease-in-out;
-        }
-
-        .mic-icon.recording {
-            animation: micPulse 1s infinite;
-        }
-
-        @keyframes micPulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.2);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .recording-text {
-            color: red;
-            font-weight: bold;
-            display: inline;
-        }
-
-        .dot-animation {
-            font-size: 24px;
-            letter-spacing: 2px;
-            color: red;
-            display: inline;
-        }
-
-        .dot-animation span {
-            animation: blink 1.5s infinite;
-            opacity: 0;
-        }
-
-        .dot-animation span:nth-child(1) {
-            animation-delay: 0.2s;
-        }
-
-        .dot-animation span:nth-child(2) {
-            animation-delay: 0.4s;
-        }
-
-        .dot-animation span:nth-child(3) {
-            animation-delay: 0.6s;
-        }
-
-        @keyframes blink {
-            0% {
-                opacity: 0;
-            }
-
-            50% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0;
-            }
-        }
-
-        #recognize-status,
-        #message {
-            margin-top: 20px;
-            font-size: 18px;
-            text-align: center;
-        }
-
-        #message {
-            color: green;
-        }
-    </style>
 </head>
-
 <body>
     <div class="header_section">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -147,28 +66,21 @@
         const nameInput = document.getElementById('name');
         const micIcon = document.querySelector('.mic-icon');
         const passwordHint = document.querySelector('.long_text_1');
-
-
-
-
         // Disable button by default
         registerButton.disabled = true;
-
-
         function resetUI() {
     // Reset the status text to its initial "Recognize..." state
-    statusText.innerHTML = '<span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>';
+        statusText.innerHTML = '<span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>';
 
-    // Show the "My voice is my password" text
-    if (passwordHint) {
-        passwordHint.style.display = 'block';
+        // Show the "My voice is my password" text
+        if (passwordHint) {
+            passwordHint.style.display = 'block';
+        }
+
+        // Clear any recognition status or error message
+        recognizeStatusDiv.textContent = '';
+        messageDiv.textContent = '';
     }
-
-    // Clear any recognition status or error message
-    recognizeStatusDiv.textContent = '';
-    messageDiv.textContent = '';
-}
-
         // Enable button only when name input has a value
         nameInput.addEventListener('input', function () {
             registerButton.disabled = !nameInput.value.trim();
@@ -240,32 +152,32 @@
         }
 
         function registerVoice(blob) {
-    const name = document.getElementById('name').value;
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('audio', blob, 'train.wav');
+        const name = document.getElementById('name').value;
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('audio', blob, 'train.wav');
 
-    statusDiv.textContent = "Processing registration...";
+        statusDiv.textContent = "Processing registration...";
 
-    fetch('/register', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            // Set snackbar message in localStorage only if it doesn't already exist
-            if (!localStorage.getItem('snackbarMessage')) {
-                localStorage.setItem('snackbarMessage', data.msg);
-            }
-
-            // Reload the page after successful registration
-            location.reload();
+        fetch('/register', {
+            method: 'POST',
+            body: formData
         })
-        .catch(error => {
-            messageDiv.textContent = "Error: " + error.message;
-            statusDiv.textContent = "";
-        });
-}
+            .then(response => response.json())
+            .then(data => {
+                // Set snackbar message in localStorage only if it doesn't already exist
+                if (!localStorage.getItem('snackbarMessage')) {
+                    localStorage.setItem('snackbarMessage', data.msg);
+                }
+
+                // Reload the page after successful registration
+                location.reload();
+            })
+            .catch(error => {
+                messageDiv.textContent = "Error: " + error.message;
+                statusDiv.textContent = "";
+            });
+    }
 
         window.onload = function() {
             // Show the snackbar message
@@ -290,8 +202,6 @@
                 }, 3000); // 3 seconds display time
             }
         }
-
-
 
         function exportWAV(audioData, sampleRate) {
             const mergedBuffers = mergeBuffers(audioData, sampleRate * 5);

@@ -3,6 +3,7 @@ import os
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import json
+import whisper
 from speaker_reg_app import (
     recognize_user, record_audio, register_user, 
     load_model, init_db, extract_voice_embedding, 
@@ -20,6 +21,11 @@ def index():
 @app.route('/register')
 def register_page():
     return render_template('register.html')  # Serve the register page.
+
+
+@app.route('/transcription')
+def transcription_page():
+    return render_template('transcription.html')  # Serve the transcription page.
 
 @app.route('/recognize')
 def recognize_page():
@@ -63,6 +69,9 @@ def handle_recognition():
         return jsonify({'msg': 'File not found after saving.'}), 400
 
     print("File saved at:", filepath)
+    result = model.transcribe(filepath)
+    transcription = result['text']
+    print("Transcription:", transcription)
 
     try:
         print("Loading the pre-trained model...")
@@ -74,7 +83,54 @@ def handle_recognition():
 
     USERNAME = recognize_user(voice_embedding, cursor)
 
-    return jsonify({'msg': 'Hey ' + USERNAME + ', Welcome to Stella Voice Assistant !!'})
+
+    return jsonify({'msg': 'Hey ' + USERNAME + ', Welcome to Stella Voice Assistant !!', 'transcription': transcription})
+
+
+
+
+
+
+
+model = whisper.load_model("base")  # You can choose 'tiny', 'base', 'small', 'medium', or 'large' model depending on your requirement
+
+@app.route('/transcription', methods=['POST'])
+def handle_transcription():
+    try:
+        audio_file = request.files['audio']
+
+        # Normalize the path to ensure correct slashes
+        filepath = os.path.normpath(os.path.join('C:/Users/hp/Downloads/Speaker_App', secure_filename(audio_file.filename)))
+        print("filepath:", filepath)
+
+        # Save the uploaded audio file
+        audio_file.save(filepath)
+
+        # Check if the file exists and inspect its format
+        if not os.path.exists(filepath):
+            return jsonify({'msg': 'File not found after saving.'}), 400
+
+        print("File saved at:", filepath)
+
+        # Use the Whisper model to transcribe the audio
+        print("Transcribing audio using Whisper model...")
+        result = model.transcribe(filepath)
+        transcription = result['text']
+        print("Transcription:", transcription)
+
+        # Return the transcription in the response
+        return jsonify({'msg': 'Transcription successful', 'transcription': transcription})
+
+    except Exception as e:
+        return jsonify({'msg': f"Failed to transcribe audio file: {str(e)}"}), 500
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     conn, cursor = init_db()
