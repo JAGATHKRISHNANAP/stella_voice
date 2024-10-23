@@ -9,6 +9,8 @@ import numpy as np
 import torchaudio
 import warnings
 import sqlite3
+import os
+from config import AUDIO_DIR    
 
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -16,7 +18,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Database initialization
 def init_db():
-    conn = sqlite3.connect('C:/Users/hp/Downloads/Speaker_App/stella_db.sqlite', check_same_thread=False)
+    db_path=os.path.join(AUDIO_DIR, 'stella_db.sqlite')
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS stellausers (

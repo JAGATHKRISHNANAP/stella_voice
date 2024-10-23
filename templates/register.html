@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="static/css/responsive.css">
 </head>
 <body>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <div class="header_section">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <a class="logo" href="/"><img src="static/images/logo.svg"></a>
@@ -34,6 +37,7 @@
                     <form id="registration-form">
                         <label for="name">Enter your name:</label><br>
                         <input type="text" id="name" name="name" required><br><br>
+                        <div id="recording-timer"><h1>0:00</h1></div>
 
                         <div class="play_icon">
                             <button id="register-record-btn" type="button" data-toggle="tooltip" data-placement="top" title="Click here to start voice recording" disabled>
@@ -49,6 +53,25 @@
                     <div id="register-status" style="display: none;"></div>
                     <div id="message"></div>
                     <div id="snackbar"></div>
+                    <div id="successModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="successModalLabel">Registration Successful</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p id="modalMessage">Your registration was successful.</p>
+                                    <p id="Transcription"></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -59,6 +82,9 @@
         let audioChunks = [];
         let audioContext;
         let audioStream;
+
+        let elapsedTime = 0;
+        let timerInterval;
 
         const registerButton = document.getElementById('register-record-btn');
         const statusDiv = document.getElementById('register-status');
@@ -98,6 +124,7 @@
             // Proceed with recording
             if (mediaRecorder && mediaRecorder.state === "recording") {
                 mediaRecorder.stop();
+                stopTimer();
                 registerButton.classList.remove("recording");
             } else {
                 startRecording();
@@ -123,6 +150,7 @@
 
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.onstop = () => {
+                        stopTimer();
                         const blob = exportWAV(audioChunks, 16000);
                         audioChunks = [];
                         registerVoice(blob);
@@ -132,8 +160,11 @@
                     mediaRecorder.start();
                     statusText.querySelector('.recording-text').textContent = "Recording";
                     registerButton.querySelector(".mic-icon").classList.add("recording");
+                    elapsedTime = 0;
+                    startTimer();
                     setTimeout(() => {
                         mediaRecorder.stop();
+                        stopTimer();
                         statusText.querySelector('.recording-text').textContent = "Recording stopped";
                         registerButton.querySelector(".mic-icon").classList.remove("recording");
                         // location.reload();
@@ -151,33 +182,53 @@
             }
         }
 
+        function updateRecordingTime(timeInSeconds) {
+   const minutes = Math.floor(timeInSeconds / 60);
+   const seconds = timeInSeconds % 60;
+   const formattedTime = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+   document.getElementById('recording-timer').querySelector('h1').textContent = formattedTime;  // Display timer in the UI
+}
+
+        function startTimer() {
+   timerInterval = setInterval(() => {
+      elapsedTime++;
+      updateRecordingTime(elapsedTime);
+   }, 1000); // Update every second (1000ms)
+}
+
+        function stopTimer() {
+        clearInterval(timerInterval);
+        }
+
         function registerVoice(blob) {
-        const name = document.getElementById('name').value;
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('audio', blob, 'train.wav');
+    const name = document.getElementById('name').value;
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('audio', blob, 'train.wav');
 
-        statusDiv.textContent = "Processing registration...";
+    statusDiv.textContent = "Processing registration...";
 
-        fetch('/register', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                // Set snackbar message in localStorage only if it doesn't already exist
-                if (!localStorage.getItem('snackbarMessage')) {
-                    localStorage.setItem('snackbarMessage', data.msg);
-                }
-
-                // Reload the page after successful registration
-                location.reload();
-            })
-            .catch(error => {
-                messageDiv.textContent = "Error: " + error.message;
-                statusDiv.textContent = "";
-            });
-    }
+    fetch('/register', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update the modal message with the response
+        const modalMessage = document.getElementById('modalMessage');
+        modalMessage.textContent = data.msg;
+        const Transcription=document.getElementById('Transcription')
+        Transcription.textContent = data.transcription;
+        $('#successModal').modal('show');
+        $('#successModal').on('hidden.bs.modal', function () {
+            location.reload();
+        });
+    })
+    .catch(error => {
+        messageDiv.textContent = "Error: " + error.message;
+        statusDiv.textContent = "";
+    });
+}
 
         window.onload = function() {
             // Show the snackbar message

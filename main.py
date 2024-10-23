@@ -9,10 +9,14 @@ from speaker_reg_app import (
     load_model, init_db, extract_voice_embedding, 
     is_user_already_registered
 )
+from config import AUDIO_DIR
 
 app = Flask(__name__)
-trainfilepath = "C:/Users/hp/Downloads/Speaker_App/train.wav"
-testfilepath = "C:/Users/hp/Downloads/Speaker_App/test.wav"
+
+# trainfilepath = "C:/Users/hp/Downloads/Speaker_App/train.wav"
+# testfilepath = "C:/Users/hp/Downloads/Speaker_App/test.wav"
+# AUDIO_DIR = os.path.join(os.getcwd(), 'Audio_File')
+
 
 @app.route('/')
 def index():
@@ -31,14 +35,52 @@ def transcription_page():
 def recognize_page():
     return render_template('recognize.html')  # Serve the recognize page.
 
+# @app.route('/register', methods=['POST'])
+# def handle_register():
+#     name = request.form.get('name')
+#     audio_file = request.files.get('audio')
+#     print("Name:", name)
+#     print("Audio File:", audio_file)
+
+#     if name and audio_file:
+#         trainfilepath = "C:/Users/hp/Downloads/Speaker_App/train.wav"
+#         audio_file.save(trainfilepath)  # Save the uploaded file
+
+#         # Extract voice embedding for the current audio
+#         new_voice_embedding = extract_voice_embedding(trainfilepath, classifier)
+
+#         # Check if the voice embedding is already in the database
+#         if is_user_already_registered(new_voice_embedding, cursor):
+#             return jsonify({'msg': 'This user is already registered'}), 200
+        
+#         result = model.transcribe(trainfilepath)
+#         transcription = result['text']
+#         print("Transcription:", transcription)
+
+#         # Register the user if not already in the database
+#         register_user(name, new_voice_embedding, cursor, conn)
+
+#         return jsonify({'msg': f"The user '{name}' was registered successfully.",'transcription': transcription})
+
+#     return jsonify({'msg': 'Error in registration'}), 400
+
+
+
 @app.route('/register', methods=['POST'])
 def handle_register():
     name = request.form.get('name')
     audio_file = request.files.get('audio')
+    print("Name:", name)
+    print("Audio File:", audio_file)
 
     if name and audio_file:
-        trainfilepath = "C:/Users/hp/Downloads/Speaker_App/train.wav"
-        audio_file.save(trainfilepath)  # Save the uploaded file
+        # Define paths for train.wav and test.wav inside the Audio_File folder
+        trainfilepath = os.path.join(AUDIO_DIR, 'train.wav')
+        print("Train File Path:", trainfilepath)
+        
+        
+        # Save the uploaded file as train.wav (or you could change it based on input)
+        audio_file.save(trainfilepath)
 
         # Extract voice embedding for the current audio
         new_voice_embedding = extract_voice_embedding(trainfilepath, classifier)
@@ -46,20 +88,26 @@ def handle_register():
         # Check if the voice embedding is already in the database
         if is_user_already_registered(new_voice_embedding, cursor):
             return jsonify({'msg': 'This user is already registered'}), 200
+        
+        # Transcribe the saved audio file
+        result = model.transcribe(trainfilepath)
+        transcription = result['text']
+        print("Transcription:", transcription)
 
         # Register the user if not already in the database
         register_user(name, new_voice_embedding, cursor, conn)
 
-        return jsonify({'msg': f"The user '{name}' was registered successfully."})
+        return jsonify({'msg': f"The user '{name}' was registered successfully.", 'transcription': transcription})
 
     return jsonify({'msg': 'Error in registration'}), 400
 
 @app.route('/recognize', methods=['POST'])
 def handle_recognition():
     audio_file = request.files['audio']
+    testfilepath = os.path.join(AUDIO_DIR, 'test.wav')
 
     # Normalize the path to ensure correct slashes
-    filepath = os.path.normpath(os.path.join('C:/Users/hp/Downloads/Speaker_App', secure_filename(audio_file.filename)))
+    filepath = testfilepath
     print("filepath:", filepath)
 
     audio_file.save(filepath)
@@ -85,12 +133,6 @@ def handle_recognition():
 
 
     return jsonify({'msg': 'Hey ' + USERNAME + ', Welcome to Stella Voice Assistant !!', 'transcription': transcription})
-
-
-
-
-
-
 
 model = whisper.load_model("base")  # You can choose 'tiny', 'base', 'small', 'medium', or 'large' model depending on your requirement
 
@@ -123,13 +165,6 @@ def handle_transcription():
 
     except Exception as e:
         return jsonify({'msg': f"Failed to transcribe audio file: {str(e)}"}), 500
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

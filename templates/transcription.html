@@ -38,6 +38,7 @@
                         <img src="static/images/microphone.png" class="mic-icon" alt="Mic Icon">
                      </button>
                   </div>
+                  <div id="recording-timer"><h1>0:00</h1></div>
                   <h1 id="statusText" class="Cooming_soon_taital">
                      <span class="recording-text">Speech-to-Text</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>
                   </h1>
@@ -49,24 +50,28 @@
             </div>
          </div>
       </div>
-      <div class="modal fade" id="recognitionModal" tabindex="-1" role="dialog" aria-labelledby="recognitionModalLabel" aria-hidden="true">
-         <div class="modal-dialog" role="document">
-            <div class="modal-content custom-modal">
-               <div class="modal-header custom-modal-header">
+     <div id="recognitionModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="recognitionModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable" role="document">
+          <div class="modal-content">
+              <div class="modal-header">
                   <h5 class="modal-title" id="recognitionModalLabel">Voice Recognition Result</h5>
-                  <button type="button" class="close" data-dismiss="modal" onclick="window.location.reload();">
-                     <span aria-hidden="true">&times;</span>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="window.location.reload();">
+                      <span aria-hidden="true">&times;</span>
                   </button>
-               </div>
-               <div class="modal-body custom-modal-body" id="modalMessage">
-               </div>
-               <div class="modal-footer custom-modal-footer">
-                  <button type="button" class="see_bt custom-close-btn" data-dismiss="modal" onclick="window.location.reload();">Close</button>
-               </div>
-            </div>
-         </div>
+              </div>
+              <div class="modal-body">
+                  <p id="modalMessage"></p>
+                  <p id="Transcription"></p>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.location.reload();">OK</button>
+              </div>
+          </div>
       </div>
-
+  </div>
+  
+     
+   
 
 
       <script>
@@ -75,6 +80,9 @@
         let audioContext;
         let audioStream;
         let isRecording = false;
+
+        let timerInterval;
+        let elapsedTime = 0;
 
         const recognizeButton = document.getElementById('recognize-record-btn');
         const recognizeStatusDiv = document.getElementById('recognize-status');
@@ -115,17 +123,37 @@
                         audioChunks = [];
                         recognizeVoice(blob);
                         stopMicrophoneAccess();
+                        stopTimer();
                     };
 
                     mediaRecorder.start();
                     statusText.querySelector('.recording-text').textContent = "Recording";
                     recognizeButton.querySelector(".mic-icon").classList.add("recording");
+                    elapsedTime = 0;
+                    startTimer();
                 })
                 .catch(error => {
                     console.error("Error accessing the microphone: ", error);
                 });
         }
 
+        function startTimer() {
+   timerInterval = setInterval(() => {
+      elapsedTime++;
+      updateRecordingTime(elapsedTime);
+   }, 1000); // Update every second (1000ms)
+}
+
+function stopTimer() {
+   clearInterval(timerInterval);
+}
+
+function updateRecordingTime(timeInSeconds) {
+   const minutes = Math.floor(timeInSeconds / 60);
+   const seconds = timeInSeconds % 60;
+   const formattedTime = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+   document.getElementById('recording-timer').querySelector('h1').textContent = formattedTime;  // Display timer in the UI
+}
         // Recognize button event listener
         recognizeButton.addEventListener('click', () => {
             if (!isRecording) {
@@ -137,6 +165,7 @@
                 if (mediaRecorder && mediaRecorder.state === "recording") {
                     statusText.querySelector('.recording-text').textContent = "Processing"; // Change text to "Processing"
                     mediaRecorder.stop();
+                    stopTimer();
                     isRecording = false; // Allow recording to be triggered again after stopping
                     recognizeButton.querySelector(".mic-icon").classList.remove("recording");
                 }

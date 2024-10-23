@@ -10,6 +10,13 @@
       <link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
       <link rel="stylesheet" type="text/css" href="static/css/style.css">
       <link rel="stylesheet" href="static/css/responsive.css">
+   
+      <style>
+         #recording-timer h1 {
+           font-size: 3rem; /* Increase the size of h1 */
+         }
+      </style>
+   
    </head>
    <body>
       <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
@@ -37,19 +44,24 @@
                     <button id="recognize-record-btn" data-toggle="tooltip" data-placement="top" title="Click here to start voice recording">
                         <img src="static/images/microphone.png" class="mic-icon" alt="Mic Icon">
                      </button>
+                    
                   </div>
+                  <div id="recording-timer"><h1>0:00</h1></div>
+                  <!-- <button onclick="startListening()">Speak Now</button> -->
                   <h1 id="statusText" class="Cooming_soon_taital">
                      <span class="recording-text">Recognize</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>
                   </h1>
                   <p class="long_text_1">"My voice is my password"</p>
 
+
                   <div id="recognize-status" style="display: none;"></div>
                   <div id="message"></div>
+                  
                </div>
             </div>
          </div>
       </div>
-      <div class="modal fade" id="recognitionModal" tabindex="-1" role="dialog" aria-labelledby="recognitionModalLabel" aria-hidden="true">
+      <!-- <div class="modal fade" id="recognitionModal" tabindex="-1" role="dialog" aria-labelledby="recognitionModalLabel" aria-hidden="true">
          <div class="modal-dialog" role="document">
             <div class="modal-content custom-modal">
                <div class="modal-header custom-modal-header">
@@ -59,14 +71,54 @@
                   </button>
                </div>
                <div class="modal-body custom-modal-body" id="modalMessage">
-               <div id="transcriptionText" style="margin-top: 10px;"></div>
+               <div class="modal-body custom-modal-body" id="transcriptionText" style="margin-top: 10px;"></div>
                </div>
                <div class="modal-footer custom-modal-footer">
                   <button type="button" class="see_bt custom-close-btn" data-dismiss="modal" onclick="window.location.reload();">Close</button>
                </div>
             </div>
          </div>
-      </div>
+      </div> -->
+      <!-- <div class="modal fade" id="recognitionModal" tabindex="-1" role="dialog" aria-labelledby="recognitionModalLabel" aria-hidden="true">
+         <div class="modal-dialog" role="document">
+            <div class="modal-content custom-modal">
+               <div class="modal-header custom-modal-header">
+                  <h5 class="modal-title" id="recognitionModalLabel">Voice Recognition Result</h5>
+                  <button type="button" class="close" data-dismiss="modal" onclick="window.location.reload();">
+                     <span aria-hidden="true">&times;</span>
+                  </button>
+               </div>
+               <div class="modal-body custom-modal-body">
+                  <div id="modalMessage"></div>
+                  <div id="transcriptionText" style="margin-top: 10px;"></div>
+               </div>
+               <div class="modal-footer custom-modal-footer">
+                  <button type="button" class="see_bt custom-close-btn" data-dismiss="modal" onclick="window.location.reload();">Close</button>
+               </div>
+            </div>
+         </div>
+      </div> -->
+      <div id="recognitionModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="recognitionModalLabel" aria-hidden="true">
+         <div class="modal-dialog" role="document">
+             <div class="modal-content">
+                 <div class="modal-header">
+                     <h5 class="modal-title" id="recognitionModalLabel">Voice Recognition Result</h5>
+                     <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="window.location.reload();">
+                         <span aria-hidden="true">&times;</span>
+                     </button>
+                 </div>
+                 <div class="modal-body">
+                     <p id="modalMessage"></p>
+                     <p id="Transcription"></p>
+                 </div>
+                 <div class="modal-footer">
+                     <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.location.reload();">OK</button>
+                 </div>
+             </div>
+         </div>
+     </div>
+     
+      
 
 
 
@@ -75,6 +127,9 @@
         let audioChunks = [];
         let audioContext;
         let audioStream;
+
+        let timerInterval;
+        let elapsedTime = 0;
 
          const recognizeButton = document.getElementById('recognize-record-btn');
          const recognizeStatusDiv = document.getElementById('recognize-status');
@@ -95,52 +150,125 @@
             messageDiv.textContent = '';
          }
          // Function to start recording
+
          function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-               .then(stream => {
-                     audioStream = stream;
-                     audioContext = new AudioContext({ sampleRate: 16000 });
-                     const source = audioContext.createMediaStreamSource(stream);
-                     const recorder = audioContext.createScriptProcessor(4096, 1, 1);
+         navigator.mediaDevices.getUserMedia({ audio: true })
+         .then(stream => {
+            audioStream = stream;
+            audioContext = new AudioContext({ sampleRate: 16000 });
+            const source = audioContext.createMediaStreamSource(stream);
+            const recorder = audioContext.createScriptProcessor(4096, 1, 1);
 
-                     source.connect(recorder);
-                     recorder.connect(audioContext.destination);
+            source.connect(recorder);
+            recorder.connect(audioContext.destination);
 
-                     recorder.onaudioprocess = function(event) {
-                        const inputData = event.inputBuffer.getChannelData(0);
-                        audioChunks.push(new Float32Array(inputData));
-                     };
+            recorder.onaudioprocess = function(event) {
+               const inputData = event.inputBuffer.getChannelData(0);
+               audioChunks.push(new Float32Array(inputData));
+            };
 
-                     mediaRecorder = new MediaRecorder(stream);
-                     mediaRecorder.onstop = () => {
-                        const blob = exportWAV(audioChunks, 16000);
-                        audioChunks = [];
-                        recognizeVoice(blob);
-                        stopMicrophoneAccess();
-                     };
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.onstop = () => {
+               const blob = exportWAV(audioChunks, 16000);
+               audioChunks = [];
+               recognizeVoice(blob);
+               stopMicrophoneAccess();
+            };
 
-                     mediaRecorder.start();
-                     statusText.querySelector('.recording-text').textContent = "Recording";  // Show "Recording" during the process
-                     recognizeButton.querySelector(".mic-icon").classList.add("recording");
-                     setTimeout(() => {
-                        mediaRecorder.stop();
-                        statusText.querySelector('.recording-text').textContent = "Processing"; // Update status
-                        recognizeButton.querySelector(".mic-icon").classList.remove("recording");
-                     }, 5000); // 5000 milliseconds = 5 seconds
-               })
-               .catch(error => {
-                     console.error("Error accessing the microphone: ", error);
-               });
-         }
+         mediaRecorder.start();
+         statusText.querySelector('.recording-text').textContent = "Recording";  // Show "Recording" during the process
+         recognizeButton.querySelector(".mic-icon").classList.add("recording");
+
+         // Start recording timer
+         elapsedTime = 0;
+         startTimer();  // Function to start timer
+         
+         setTimeout(() => {
+            mediaRecorder.stop();
+            stopTimer(); // Stop the timer
+            statusText.querySelector('.recording-text').textContent = "Processing"; // Update status
+            recognizeButton.querySelector(".mic-icon").classList.remove("recording");
+         }, 5000); // 5000 milliseconds = 5 seconds
+      })
+      .catch(error => {
+         console.error("Error accessing the microphone: ", error);
+      });
+}
+
+function startTimer() {
+   timerInterval = setInterval(() => {
+      elapsedTime++;
+      updateRecordingTime(elapsedTime);
+   }, 1000); // Update every second (1000ms)
+}
+
+function stopTimer() {
+   clearInterval(timerInterval);
+}
+
+function updateRecordingTime(timeInSeconds) {
+   const minutes = Math.floor(timeInSeconds / 60);
+   const seconds = timeInSeconds % 60;
+   const formattedTime = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+   document.getElementById('recording-timer').querySelector('h1').textContent = formattedTime;  // Display timer in the UI
+}
+
+
+recognizeButton.addEventListener('click', () => {
+   if (!mediaRecorder || mediaRecorder.state === "inactive") {
+      resetUI(); // Reset UI before starting a new recording
+      startRecording();
+   } else if (mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      stopTimer(); // Stop timer when manually stopping recording
+   }
+});
+         // function startRecording() {
+         //    navigator.mediaDevices.getUserMedia({ audio: true })
+         //       .then(stream => {
+         //             audioStream = stream;
+         //             audioContext = new AudioContext({ sampleRate: 16000 });
+         //             const source = audioContext.createMediaStreamSource(stream);
+         //             const recorder = audioContext.createScriptProcessor(4096, 1, 1);
+
+         //             source.connect(recorder);
+         //             recorder.connect(audioContext.destination);
+
+         //             recorder.onaudioprocess = function(event) {
+         //                const inputData = event.inputBuffer.getChannelData(0);
+         //                audioChunks.push(new Float32Array(inputData));
+         //             };
+
+         //             mediaRecorder = new MediaRecorder(stream);
+         //             mediaRecorder.onstop = () => {
+         //                const blob = exportWAV(audioChunks, 16000);
+         //                audioChunks = [];
+         //                recognizeVoice(blob);
+         //                stopMicrophoneAccess();
+         //             };
+
+         //             mediaRecorder.start();
+         //             statusText.querySelector('.recording-text').textContent = "Recording";  // Show "Recording" during the process
+         //             recognizeButton.querySelector(".mic-icon").classList.add("recording");
+         //             setTimeout(() => {
+         //                mediaRecorder.stop();
+         //                statusText.querySelector('.recording-text').textContent = "Processing"; // Update status
+         //                recognizeButton.querySelector(".mic-icon").classList.remove("recording");
+         //             }, 5000); // 5000 milliseconds = 5 seconds
+         //       })
+         //       .catch(error => {
+         //             console.error("Error accessing the microphone: ", error);
+         //       });
+         // }
      
-         recognizeButton.addEventListener('click', () => {
-            if (!mediaRecorder || mediaRecorder.state === "inactive") {
-               resetUI(); // Reset UI before starting a new recording
-               startRecording();
-            } else if (mediaRecorder.state === "recording") {
-               mediaRecorder.stop();
-            }
-         });
+         // recognizeButton.addEventListener('click', () => {
+         //    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+         //       resetUI(); // Reset UI before starting a new recording
+         //       startRecording();
+         //    } else if (mediaRecorder.state === "recording") {
+         //       mediaRecorder.stop();
+         //    }
+         // });
 
          function recognizeVoice(blob) {
          const formData = new FormData();
@@ -160,13 +288,23 @@
             })
             .then(response => response.json())
             .then(data => {
+                  console.log("Recognition result: ", data);   
                   let message = data.msg;
                   let transcription=data.transcription;
                   console.log("Transcription: ", transcription);  
                   if (message === "Hey New User, Welcome to Stella Voice Assistant !!") {
                      message += `<br><a href="/register" id="register-link" class="register-link">Click here to register</a>`;
                   }
-                  document.getElementById('modalMessage').innerHTML = message;
+                  const modalMessageElem = document.getElementById('modalMessage');
+                  const transcriptionTextElem = document.getElementById('transcriptionText');
+
+                  if (modalMessageElem) {
+                     modalMessageElem.innerHTML = message;
+                  }
+
+                  if (transcriptionTextElem) {
+                     transcriptionTextElem.innerHTML = transcription;
+                  }
                   if (passwordHint) {
                      passwordHint.style.display = 'none';
                   }
