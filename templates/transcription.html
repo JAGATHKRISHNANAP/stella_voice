@@ -69,18 +69,12 @@
           </div>
       </div>
   </div>
-  
-     
-   
-
-
       <script>
         let mediaRecorder;
         let audioChunks = [];
         let audioContext;
         let audioStream;
         let isRecording = false;
-
         let timerInterval;
         let elapsedTime = 0;
 
@@ -90,7 +84,6 @@
         const statusText = document.getElementById('statusText');
         const passwordHint = document.querySelector('.long_text_1');
 
-        // Function to reset UI
         function resetUI() {
             statusText.innerHTML = '<span class="recording-text">Recording</span><span id="recordingDots" class="dot-animation"><span>.</span><span>.</span><span>.</span></span>';
             if (passwordHint) {
@@ -100,7 +93,6 @@
             messageDiv.textContent = '';
         }
 
-        // Function to start recording
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
@@ -144,36 +136,34 @@
    }, 1000); // Update every second (1000ms)
 }
 
-function stopTimer() {
-   clearInterval(timerInterval);
-}
+        function stopTimer() {
+            clearInterval(timerInterval);
+         }
 
-function updateRecordingTime(timeInSeconds) {
-   const minutes = Math.floor(timeInSeconds / 60);
-   const seconds = timeInSeconds % 60;
-   const formattedTime = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-   document.getElementById('recording-timer').querySelector('h1').textContent = formattedTime;  // Display timer in the UI
-}
-        // Recognize button event listener
-        recognizeButton.addEventListener('click', () => {
+        function updateRecordingTime(timeInSeconds) {
+         const minutes = Math.floor(timeInSeconds / 60);
+         const seconds = timeInSeconds % 60;
+         const formattedTime = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+         document.getElementById('recording-timer').querySelector('h1').textContent = formattedTime;  // Display timer in the UI
+      }
+
+         recognizeButton.addEventListener('click', () => {
             if (!isRecording) {
-                // Start recording
-                resetUI();
-                startRecording();
-                isRecording = true; // Set to true to prevent re-triggering until stopped
+               resetUI();
+               startRecording();
+               isRecording = true; 
             } else {
-                if (mediaRecorder && mediaRecorder.state === "recording") {
-                    statusText.querySelector('.recording-text').textContent = "Processing"; // Change text to "Processing"
-                    mediaRecorder.stop();
-                    stopTimer();
-                    isRecording = false; // Allow recording to be triggered again after stopping
-                    recognizeButton.querySelector(".mic-icon").classList.remove("recording");
-                }
+               if (mediaRecorder && mediaRecorder.state === "recording") {
+                  statusText.querySelector('.recording-text').textContent = "Processing"; // Change text to "Processing"
+                  mediaRecorder.stop();
+                  stopTimer();
+                  isRecording = false; // Allow recording to be triggered again after stopping
+                  recognizeButton.querySelector(".mic-icon").classList.remove("recording");
+               }
             }
-        });
+      });
 
-        // Function to export audio to WAV format
-        function exportWAV(audioData, sampleRate) {
+         function exportWAV(audioData, sampleRate) {
             const totalSamples = audioData.reduce((acc, curr) => acc + curr.length, 0);
             const mergedBuffers = mergeBuffers(audioData, totalSamples);
             const downsampledBuffer = downsampleBuffer(mergedBuffers, sampleRate);
@@ -181,8 +171,7 @@ function updateRecordingTime(timeInSeconds) {
             return new Blob([wavBuffer], { type: 'audio/wav' });
         }
 
-        // Function to handle voice recognition and result display
-        function recognizeVoice(blob) {
+         function recognizeVoice(blob) {
             const formData = new FormData();
             formData.append('audio', blob, 'test.wav');
 
