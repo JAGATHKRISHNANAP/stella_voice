@@ -11,8 +11,6 @@ import warnings
 import sqlite3
 import os
 from config import AUDIO_DIR    
-
-
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
